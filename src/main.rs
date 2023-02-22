@@ -18,6 +18,12 @@ fn parse_args(raw_args: Args) -> CommandInstance {
   let mut settings: HashMap<String, bool> = HashMap::new();
   let mut paths: Vec<String> = Vec::new();
 
+  for arg in raw_args {
+    if arg.starts_with("-") {
+      // Handle settings
+    } // handle paths and invalid parameters
+  }
+
   return CommandInstance { 
     settings: settings, 
     paths: paths 
