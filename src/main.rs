@@ -67,8 +67,15 @@ fn remove_path(path: &PathBuf, instance: &CommandInstance) {
                 }
             };
         }
-    } else {
+    // Sanity check to ensure that its actually a file, may impact performance, but could prevent errors
+    } else if path.is_file() {
         // Handle File Delete
+        match fs::remove_file(path) {
+          Ok(_) => {}
+          Err(e) => {
+            println!("{}", e);
+          }
+        }
     }
 }
 
