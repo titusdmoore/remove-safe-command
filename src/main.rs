@@ -1,24 +1,20 @@
 use std::collections::HashMap;
-use std::env;
 use std::env::Args;
-use std::fs;
 use std::path::PathBuf;
+use std::time::Instant;
+use std::{env, fs};
 
 fn main() {
-    let args: Args = env::args();
-    let instance: CommandInstance = parse_args(args);
+    let mut instance: CommandInstance = command_start();
 
-    for path in &instance.paths {
-        // handle remove paths
-        remove_path(path, &instance);
-    }
+    remove_paths(&mut instance);
 }
 
 // Convert args into usable format
-fn parse_args(raw_args: Args) -> CommandInstance {
+fn create_command_instance(raw_args: Args, timer: Instant) -> CommandInstance {
     let mut settings: HashMap<String, bool> = HashMap::new();
     // HashMap<PathBuf, IsDeleted (bool)>
-    let mut paths: HashMap<PathBuf, bool> = HashMap::new();
+    let mut paths: Vec<PathWithStatus> = Vec::new();
 
     for arg in raw_args {
         if arg.starts_with("-") {
@@ -38,7 +34,10 @@ fn parse_args(raw_args: Args) -> CommandInstance {
             let path_buf: PathBuf = PathBuf::from(arg);
 
             if path_buf.exists() {
-                paths.insert(path_buf, false);
+                paths.push(PathWithStatus {
+                    path: path_buf,
+                    removed: false,
+                });
             } else {
                 println!("Invalid Path: Received {}", path_buf.display());
             }
@@ -48,6 +47,7 @@ fn parse_args(raw_args: Args) -> CommandInstance {
     return CommandInstance {
         settings: settings,
         paths: paths,
+        timer: timer,
         // TODO: Implement stats prompt to end command
         files_deleted: 0,
         dirs_deleted: 0,
@@ -55,40 +55,73 @@ fn parse_args(raw_args: Args) -> CommandInstance {
 }
 
 // Control remove path
-fn remove_path(path: &PathBuf, instance: &CommandInstance) {
-    let settings = &instance.settings;
-    // Check if file or dir
-    if path.is_dir() {
-        if settings.contains_key("recursive") && settings.get("recursive") == Some(&true) {
-            match fs::remove_dir_all(path) {
-                Ok(_) => {
-                    instance.dirs_deleted += 1;
-                }
-                Err(e) => {
-                    println!("{}", e);
-                }
-            };
-        }
-    // Sanity check to ensure that its actually a file, may impact performance, but could prevent errors
-    } else if path.is_file() {
-        // Handle File Delete
-        match fs::remove_file(path) {
-            Ok(_) => {
-                instance.files_deleted += 1;
-            }
-            Err(e) => {
-                println!("{}", e);
-            }
+fn remove_paths(instance: &mut CommandInstance) {
+    if instance.paths.len() >= 1 {
+        for path in instance.paths {
+            path.remove_path(&mut instance);
         }
     }
+}
+
+fn command_start() -> CommandInstance {
+    let start = Instant::now();
+    let args: Args = env::args();
+
+    return create_command_instance(args, start);
 }
 
 fn command_end(instance: &CommandInstance) {}
 
 struct CommandInstance {
     settings: HashMap<String, bool>,
-    // PathBuf, IsRemoved(Bool)
-    paths: HashMap<PathBuf, bool>,
+    timer: Instant,
+    paths: Vec<PathWithStatus>,
     files_deleted: i32,
     dirs_deleted: i32,
+}
+
+impl CommandInstance {
+  fn increment_dirs_deleted(&mut self) {
+    self.dirs_deleted += 1;
+  }
+
+  fn increment_files_deleted(&mut self) {
+    self.files_deleted += 1;
+  }
+}
+
+struct PathWithStatus {
+    path: PathBuf,
+    removed: bool,
+}
+
+impl PathWithStatus {
+    fn remove_path(&mut self, instance: &mut CommandInstance) {
+        let settings = &instance.settings;
+        if self.path.is_dir() {
+            if settings.contains_key("recursive") && settings.get("recursive") == Some(&true) {
+                match fs::remove_dir_all(&self.path) {
+                    Ok(_) => {
+                        instance.increment_dirs_deleted();
+                        self.removed = true;
+                    }
+                    Err(e) => {
+                        println!("{}", e);
+                    }
+                };
+            }
+        // Sanity check to ensure that its actually a file, may impact performance, but could prevent errors
+        } else if self.path.is_file() {
+            // Handle File Delete
+            match fs::remove_file(&self.path) {
+                Ok(_) => {
+                    instance.files_deleted += 1;
+                    self.removed = true;
+                }
+                Err(e) => {
+                    println!("{}", e);
+                }
+            }
+        }
+    }
 }
