@@ -2,12 +2,13 @@ use std::collections::HashMap;
 use std::env::Args;
 use std::path::PathBuf;
 use std::time::Instant;
-use std::{env, fs};
+use std::{env, fs, io};
 
 fn main() {
     let mut instance: CommandInstance = command_start();
 
     remove_paths(&mut instance);
+    command_end(&instance);
 }
 
 // Convert args into usable format
@@ -35,6 +36,7 @@ fn create_command_instance(raw_args: Args, timer: Instant) -> CommandInstance {
 
             if path_buf.exists() {
                 paths.push(PathWithStatus {
+                    path_type: PathWithStatus::get_path_type(&path_buf),
                     path: path_buf,
                     removed: false,
                 });
@@ -56,9 +58,24 @@ fn create_command_instance(raw_args: Args, timer: Instant) -> CommandInstance {
 
 // Control remove path
 fn remove_paths(instance: &mut CommandInstance) {
+    let settings = &instance.settings;
+    println!("Paths len {}", instance.paths.len());
     if instance.paths.len() >= 1 {
-        for path in instance.paths {
-            path.remove_path(&mut instance);
+        for path in &mut instance.paths {
+            match path.remove_path(settings) {
+                Ok(returned_path) => {
+                    println!("Path removed ok");
+                    match &returned_path.path_type {
+                        PathType::File => {
+                            instance.files_deleted += 1;
+                        },
+                        PathType::Dir => {
+                            instance.dirs_deleted += 1;
+                        },
+                    }
+                },
+                Err(e) => println!("{}", e),
+            }
         }
     }
 }
@@ -70,7 +87,11 @@ fn command_start() -> CommandInstance {
     return create_command_instance(args, start);
 }
 
-fn command_end(instance: &CommandInstance) {}
+fn command_end(instance: &CommandInstance) {
+    println!("Command completed with {} files deleted, and {} directories deleted.",
+    instance.files_deleted, instance.dirs_deleted);
+    println!("In {} milliseconds.", instance.timer.elapsed().as_millis());
+}
 
 struct CommandInstance {
     settings: HashMap<String, bool>,
@@ -80,34 +101,21 @@ struct CommandInstance {
     dirs_deleted: i32,
 }
 
-impl CommandInstance {
-  fn increment_dirs_deleted(&mut self) {
-    self.dirs_deleted += 1;
-  }
-
-  fn increment_files_deleted(&mut self) {
-    self.files_deleted += 1;
-  }
-}
-
 struct PathWithStatus {
     path: PathBuf,
     removed: bool,
+    path_type: PathType
 }
 
 impl PathWithStatus {
-    fn remove_path(&mut self, instance: &mut CommandInstance) {
-        let settings = &instance.settings;
+    fn remove_path(&mut self, settings: &HashMap<String, bool>) -> Result<&mut PathWithStatus, io::Error> {
         if self.path.is_dir() {
             if settings.contains_key("recursive") && settings.get("recursive") == Some(&true) {
                 match fs::remove_dir_all(&self.path) {
                     Ok(_) => {
-                        instance.increment_dirs_deleted();
                         self.removed = true;
                     }
-                    Err(e) => {
-                        println!("{}", e);
-                    }
+                    Err(e) => return Err(e),
                 };
             }
         // Sanity check to ensure that its actually a file, may impact performance, but could prevent errors
@@ -115,13 +123,25 @@ impl PathWithStatus {
             // Handle File Delete
             match fs::remove_file(&self.path) {
                 Ok(_) => {
-                    instance.files_deleted += 1;
                     self.removed = true;
                 }
-                Err(e) => {
-                    println!("{}", e);
-                }
+                Err(e) => return Err(e),
             }
         }
+
+        Ok(self)
     }
+
+    fn get_path_type(path: &PathBuf) -> PathType {
+        if path.is_dir() {
+            return PathType::Dir;
+        }
+
+        PathType::File
+    }
+}
+
+enum PathType {
+    File,
+    Dir
 }
