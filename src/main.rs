@@ -59,7 +59,7 @@ fn create_command_instance(raw_args: Args, timer: Instant) -> CommandInstance {
 // Control remove path
 fn remove_paths(instance: &mut CommandInstance) {
     let settings = &instance.settings;
-    println!("Paths len {}", instance.paths.len());
+    println!("Paths len {}", instance.paths.len()); 
     if instance.paths.len() >= 1 {
         for path in &mut instance.paths {
             match path.remove_path(settings) {
