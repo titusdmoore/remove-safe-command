@@ -93,13 +93,6 @@ fn command_end(instance: &CommandInstance) {
     println!("In {} milliseconds.", instance.timer.elapsed().as_millis());
 }
 
-struct CommandInstance {
-    settings: HashMap<String, bool>,
-    timer: Instant,
-    paths: Vec<PathWithStatus>,
-    files_deleted: i32,
-    dirs_deleted: i32,
-}
 
 struct PathWithStatus {
     path: PathBuf,
