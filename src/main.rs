@@ -1,38 +1,15 @@
 use std::env::Args;
 use std::time::Instant;
 use std::env;
-use remove_safe::{command_instance::CommandInstance, instance_path::{PathType}};
+use remove_safe::{command_instance::CommandInstance};
 
 fn main() {
     let mut instance: CommandInstance = command_start();
 
-    remove_paths(&mut instance);
+    instance.remove_paths();
     command_end(&instance);
 }
 
-// Control remove path
-fn remove_paths(instance: &mut CommandInstance) {
-    let settings = &instance.settings;
-    println!("Paths len {}", instance.paths.len()); 
-    if instance.paths.len() >= 1 {
-        for path in &mut instance.paths {
-            match path.remove_path(settings) {
-                Ok(returned_path) => {
-                    println!("Path removed ok");
-                    match &returned_path.path_type {
-                        PathType::File => {
-                            instance.files_deleted += 1;
-                        },
-                        PathType::Dir => {
-                            instance.dirs_deleted += 1;
-                        },
-                    }
-                },
-                Err(e) => println!("{}", e),
-            }
-        }
-    }
-}
 
 fn command_start() -> CommandInstance {
     let start = Instant::now();

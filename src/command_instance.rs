@@ -1,6 +1,6 @@
-use std::{collections::HashMap, env::Args, time::Instant, path::PathBuf};
-use crate::instance_path::PathWithStatus;
- 
+use crate::instance_path::{PathType, PathWithStatus};
+use std::{collections::HashMap, env::Args, path::PathBuf, time::Instant};
+
 pub struct CommandInstance {
     pub settings: HashMap<String, bool>,
     pub timer: Instant,
@@ -12,19 +12,23 @@ pub struct CommandInstance {
 impl CommandInstance {
     pub fn new(raw_args: Args, timer: Instant) -> CommandInstance {
         let mut settings: HashMap<String, bool> = HashMap::new();
-        // HashMap<PathBuf, IsDeleted (bool)>
         let mut paths: Vec<PathWithStatus> = Vec::new();
 
-        for arg in raw_args {
+        for (index, arg) in raw_args.into_iter().enumerate() {
+            // Skip first arg which is the name of the program that ran
+            if index == 0 {
+              continue;
+            }
+
             if arg.starts_with("-") {
                 // Handle Command Args
                 let split_args: Vec<&str> = arg.split("").collect();
 
                 for split_arg in split_args {
                     match split_arg {
-                        // TODO: Add Verbose Flag
                         "r" => settings.insert("recursive".to_string(), true),
                         "f" => settings.insert("force".to_string(), true),
+                        "q" => settings.insert("quiet".to_string(), true),
                         _ => continue,
                     };
                 }
@@ -54,12 +58,22 @@ impl CommandInstance {
         };
     }
 
-    pub fn remove_path(&mut self, path: &PathWithStatus) {
-        match self.paths.iter().position(|path_iter| path_iter.path.eq(&path.path)) {
-            Some(index) =>  {
-                self.paths.remove(index);
+    pub fn remove_paths(&mut self) {
+        for path in self.paths.iter_mut() {
+            // Add path remove code - pass in settings
+            match path.remove_path(&self.settings) {
+                Ok(path_updated) => match path_updated.path_type {
+                    PathType::File => {
+                        self.files_deleted += 1;
+                    }
+                    PathType::Dir => {
+                        self.dirs_deleted += 1;
+                    }
+                },
+                Err(e) => {
+                    println!("{}", e);
+                }
             }
-            None => {}
         }
     }
 }
