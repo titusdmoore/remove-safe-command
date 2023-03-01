@@ -32,30 +32,47 @@ impl PathWithStatus {
                     let thread_complete_tx_4 = thread_complete_tx_1.clone();
 
                     // Create Channels for sending paths to threads
-                    let (path_channel_tx_1, path_channel_rx_1): (Sender<&PathBuf>, Receiver<&PathBuf>) = crossbeam_channel::unbounded();
-                    let (path_channel_tx_2, path_channel_rx_2): (Sender<&PathBuf>, Receiver<&PathBuf>) = crossbeam_channel::unbounded();
-                    let (path_channel_tx_3, path_channel_rx_3): (Sender<&PathBuf>, Receiver<&PathBuf>) = crossbeam_channel::unbounded();
-                    let (path_channel_tx_4, path_channel_rx_4): (Sender<&PathBuf>, Receiver<&PathBuf>) = crossbeam_channel::unbounded();
-
+                    let (path_channel_tx_1, path_channel_rx_1): (
+                        Sender<&PathBuf>,
+                        Receiver<&PathBuf>,
+                    ) = crossbeam_channel::unbounded();
+                    let (path_channel_tx_2, path_channel_rx_2): (
+                        Sender<&PathBuf>,
+                        Receiver<&PathBuf>,
+                    ) = crossbeam_channel::unbounded();
+                    let (path_channel_tx_3, path_channel_rx_3): (
+                        Sender<&PathBuf>,
+                        Receiver<&PathBuf>,
+                    ) = crossbeam_channel::unbounded();
+                    let (path_channel_tx_4, path_channel_rx_4): (
+                        Sender<&PathBuf>,
+                        Receiver<&PathBuf>,
+                    ) = crossbeam_channel::unbounded();
 
                     /*
-                      Potential Solution to having to repopulate a thread whenever it completes deleting a path
-                      Create a controller thread (that gets the vec of the paths sent to it) that receives the name of the thread that completed (thread_complete_rx) then
-                      sends the next path to be deleted, or despawns the thread if no more paths, then from main wait for the controller thread to finish, then continue
-                     */
+                     Potential Solution to having to repopulate a thread whenever it completes deleting a path
+                     Create a controller thread (that gets the vec of the paths sent to it) that receives the name of the thread that completed (thread_complete_rx) then
+                     sends the next path to be deleted, or despawns the thread if no more paths, then from main wait for the controller thread to finish, then continue
+                    */
 
                     // Create Threads to remove
                     let thread_handle_1 =
                         thread::Builder::new()
                             .name("thread1".to_string())
                             .spawn(move || {
-                              let path_to_remove = path_channel_rx_1.recv().unwrap();
+                                let thread_name = match thread::current().name() {
+                                    Some(name) => String::from(name),
+                                    None => String::from(""),
+                                };
+                                let path_to_remove = path_channel_rx_1.recv().unwrap();
 
-                              if path_to_remove.is_dir() {
-                                fs::remove_dir_all(path_to_remove);
-                              } else if path_to_remove.is_file() {
-                                fs::remove_file(path_to_remove);
-                              }
+                                if path_to_remove.is_dir() {
+                                    fs::remove_dir_all(path_to_remove);
+                                } else if path_to_remove.is_file() {
+                                    fs::remove_file(path_to_remove);
+                                }
+
+                                thread_complete_tx_1.send(thread_name).unwrap();
                             });
                 }
 
