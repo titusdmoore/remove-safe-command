@@ -25,7 +25,7 @@ impl PathWithStatus {
                 // Check to see if enough to do multi-threaded
                 if child_paths.len() > 4 {
                     // Create Channel for communicating that the thread has completed the path removal
-                    let (thread_complete_tx_1, thread_complete_rx_1): (Sender<String>, Receiver<String>) =
+                    let (thread_complete_tx_1, thread_complete_rx): (Sender<String>, Receiver<String>) =
                         crossbeam_channel::unbounded();
                     let thread_complete_tx_2 = thread_complete_tx_1.clone();
                     let thread_complete_tx_3 = thread_complete_tx_1.clone();
@@ -36,6 +36,13 @@ impl PathWithStatus {
                     let (path_channel_tx_2, path_channel_rx_2): (Sender<&PathBuf>, Receiver<&PathBuf>) = crossbeam_channel::unbounded();
                     let (path_channel_tx_3, path_channel_rx_3): (Sender<&PathBuf>, Receiver<&PathBuf>) = crossbeam_channel::unbounded();
                     let (path_channel_tx_4, path_channel_rx_4): (Sender<&PathBuf>, Receiver<&PathBuf>) = crossbeam_channel::unbounded();
+
+
+                    /*
+                      Potential Solution to having to repopulate a thread whenever it completes deleting a path
+                      Create a controller thread (that gets the vec of the paths sent to it) that receives the name of the thread that completed (thread_complete_rx) then
+                      sends the next path to be deleted, or despawns the thread if no more paths, then from main wait for the controller thread to finish, then continue
+                     */
 
                     // Create Threads to remove
                     let thread_handle_1 =
