@@ -1,4 +1,4 @@
-use crossbeam_channel;
+use crossbeam_channel::{self, Receiver, Sender};
 use std::{
     collections::HashMap,
     fs::{self, read_dir},
@@ -25,24 +25,30 @@ impl PathWithStatus {
                 // Check to see if enough to do multi-threaded
                 if child_paths.len() > 4 {
                     // Create Channel for communicating that the thread has completed the path removal
-                    let (thread_complete_tx_1, thread_complete_rx_1) =
+                    let (thread_complete_tx_1, thread_complete_rx_1): (Sender<String>, Receiver<String>) =
                         crossbeam_channel::unbounded();
                     let thread_complete_tx_2 = thread_complete_tx_1.clone();
                     let thread_complete_tx_3 = thread_complete_tx_1.clone();
                     let thread_complete_tx_4 = thread_complete_tx_1.clone();
 
                     // Create Channels for sending paths to threads
-                    let (path_channel_tx_1, path_channel_rx_1) = crossbeam_channel::unbounded();
-                    let (path_channel_tx_2, path_channel_rx_2) = crossbeam_channel::unbounded();
-                    let (path_channel_tx_3, path_channel_rx_3) = crossbeam_channel::unbounded();
-                    let (path_channel_tx_4, path_channel_rx_4) = crossbeam_channel::unbounded();
+                    let (path_channel_tx_1, path_channel_rx_1): (Sender<&PathBuf>, Receiver<&PathBuf>) = crossbeam_channel::unbounded();
+                    let (path_channel_tx_2, path_channel_rx_2): (Sender<&PathBuf>, Receiver<&PathBuf>) = crossbeam_channel::unbounded();
+                    let (path_channel_tx_3, path_channel_rx_3): (Sender<&PathBuf>, Receiver<&PathBuf>) = crossbeam_channel::unbounded();
+                    let (path_channel_tx_4, path_channel_rx_4): (Sender<&PathBuf>, Receiver<&PathBuf>) = crossbeam_channel::unbounded();
 
                     // Create Threads to remove
                     let thread_handle_1 =
                         thread::Builder::new()
                             .name("thread1".to_string())
-                            .spawn(|thread_complete_tx_1, path_channel_rx_1| {
-                                println!("Hello, world!");
+                            .spawn(move || {
+                              let path_to_remove = path_channel_rx_1.recv().unwrap();
+
+                              if path_to_remove.is_dir() {
+                                fs::remove_dir_all(path_to_remove);
+                              } else if path_to_remove.is_file() {
+                                fs::remove_file(path_to_remove);
+                              }
                             });
                 }
 
