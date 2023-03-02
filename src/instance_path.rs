@@ -4,7 +4,7 @@ use std::{
     fs::{self, read_dir},
     io::{self, Error, ErrorKind},
     path::PathBuf,
-    thread,
+    thread::{self, Thread},
 };
 
 pub struct PathWithStatus {
@@ -20,13 +20,15 @@ impl PathWithStatus {
     ) -> Result<&mut PathWithStatus, io::Error> {
         if self.path.is_dir() {
             if settings.contains_key("recursive") && settings.get("recursive") == Some(&true) {
-                let child_paths = self.path.get_path_children()?;
+                let mut child_paths = self.path.get_path_children()?;
 
                 // Check to see if enough to do multi-threaded
                 if child_paths.len() > 4 {
                     // Create Channel for communicating that the thread has completed the path removal
-                    let (thread_complete_tx_1, thread_complete_rx): (Sender<String>, Receiver<String>) =
-                        crossbeam_channel::unbounded();
+                    let (thread_complete_tx_1, thread_complete_rx): (
+                        Sender<String>,
+                        Receiver<String>,
+                    ) = crossbeam_channel::unbounded();
                     let thread_complete_tx_2 = thread_complete_tx_1.clone();
                     let thread_complete_tx_3 = thread_complete_tx_1.clone();
                     let thread_complete_tx_4 = thread_complete_tx_1.clone();
@@ -47,13 +49,7 @@ impl PathWithStatus {
                     let (path_channel_tx_4, path_channel_rx_4): (
                         Sender<&PathBuf>,
                         Receiver<&PathBuf>,
-                    ) = crossbeam_channel::unbounded();
-
-                    /*
-                     Potential Solution to having to repopulate a thread whenever it completes deleting a path
-                     Create a controller thread (that gets the vec of the paths sent to it) that receives the name of the thread that completed (thread_complete_rx) then
-                     sends the next path to be deleted, or despawns the thread if no more paths, then from main wait for the controller thread to finish, then continue
-                    */
+                    ) = crossbeam_channel::unbounded();                    
 
                     // Create Threads to remove
                     let thread_handle_1 =
@@ -67,12 +63,43 @@ impl PathWithStatus {
                                 let path_to_remove = path_channel_rx_1.recv().unwrap();
 
                                 if path_to_remove.is_dir() {
-                                    fs::remove_dir_all(path_to_remove);
+                                    match fs::remove_dir_all(path_to_remove) {
+                                        Ok(_) => {}
+                                        Err(e) => print!("{}", e),
+                                    }
                                 } else if path_to_remove.is_file() {
-                                    fs::remove_file(path_to_remove);
+                                    match fs::remove_file(path_to_remove) {
+                                        Ok(_) => {}
+                                        Err(e) => println!("{}", e),
+                                    }
                                 }
 
                                 thread_complete_tx_1.send(thread_name).unwrap();
+                            });
+
+                            // Handle initial file population of the four threads
+                            for index in 1..=4 {
+                                if let Some(child_path) = child_paths.pop() {
+                                    match index {
+                                        1 => {
+                                            path_channel_tx_1.send(&child_path);
+                                        },
+                                        2 => {
+
+                                        },
+                                        3 => {
+                                            
+                                        },
+                                        4 => {
+
+                                        }
+                                        _ => {}
+                                    }
+                                }
+                            }
+
+                            let controller_handle = thread::spawn(move || {
+                                
                             });
                 }
 
