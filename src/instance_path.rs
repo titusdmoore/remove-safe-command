@@ -24,6 +24,9 @@ impl PathWithStatus {
 
                 // Check to see if enough to do multi-threaded
                 if child_paths.len() > 4 {
+                  // Add parent path to list of paths to remove
+                    child_paths.push(self.path.clone());
+
                     // Create Channel for communicating that the thread has completed the path removal
                     let (thread_complete_tx_1, thread_complete_rx): (
                         Sender<String>,
@@ -229,16 +232,14 @@ impl PathWithStatus {
                     });
 
                     controller_handle.join().unwrap();
+                } else {
+                    match fs::remove_dir_all(&self.path) {
+                        Ok(_) => {
+                            self.removed = true;
+                        }
+                        Err(e) => return Err(e),
+                    };
                 }
-
-                println!("I am here: {}", &self.path.display());
-
-                match fs::remove_dir_all(&self.path) {
-                    Ok(_) => {
-                        self.removed = true;
-                    }
-                    Err(e) => return Err(e),
-                };
             }
         // Sanity check to ensure that its actually a file, may impact performance, but could prevent errors
         } else if self.path.is_file() {
