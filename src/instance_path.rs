@@ -24,7 +24,6 @@ impl PathWithStatus {
 
                 // Check to see if enough to do multi-threaded
                 if child_paths.len() > 4 {
-                
                     // Create Channel for communicating that the thread has completed the path removal
                     let (thread_complete_tx_1, thread_complete_rx): (
                         Sender<String>,
@@ -131,8 +130,8 @@ impl PathWithStatus {
                                 }
 
                                 match thread_complete_tx_3.send(thread_name) {
-                                    Ok(_) => {},
-                                    Err(e) => println!("{}", e)
+                                    Ok(_) => {}
+                                    Err(e) => println!("{}", e),
                                 }
                             }
                         })?;
@@ -159,8 +158,8 @@ impl PathWithStatus {
                                 }
 
                                 match thread_complete_tx_4.send(thread_name) {
-                                    Ok(_) => {},
-                                    Err(e) => println!("{}", e)
+                                    Ok(_) => {}
+                                    Err(e) => println!("{}", e),
                                 }
                             }
                         })?;
@@ -269,10 +268,10 @@ impl WithPathChildren for PathBuf {
             return Ok(paths);
         }
 
-        return Err(Error::new(
+        Err(Error::new(
             ErrorKind::Other,
             "Path provided is not a directory",
-        ));
+        ))
     }
 }
 

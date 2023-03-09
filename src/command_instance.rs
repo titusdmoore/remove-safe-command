@@ -17,10 +17,10 @@ impl CommandInstance {
         for (index, arg) in raw_args.into_iter().enumerate() {
             // Skip first arg which is the name of the program that ran
             if index == 0 {
-              continue;
+                continue;
             }
 
-            if arg.starts_with("-") {
+            if arg.starts_with('-') {
                 // Handle Command Args
                 let split_args: Vec<&str> = arg.split("").collect();
 
@@ -48,14 +48,14 @@ impl CommandInstance {
             }
         }
 
-        return CommandInstance {
-            settings: settings,
-            paths: paths,
-            timer: timer,
+        CommandInstance {
+            settings,
+            paths,
+            timer,
             // TODO: Implement stats prompt to end command
             files_deleted: 0,
             dirs_deleted: 0,
-        };
+        }
     }
 
     pub fn remove_paths(&mut self) {
