@@ -3,7 +3,7 @@ content="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod
 
 populateFolder() {
   touch "file_from_function.txt"
-  for i in {1..100}; do
+  for i in {1..700}; do
     echo $content >> "file_from_function.txt"
   done
 
@@ -15,7 +15,7 @@ populateFolder() {
 mkdir testingDir;
 cd testingDir;
 
-for i in {1..20}; do
+for i in {1..150}; do
     mkdir "testingDir_$i";
     touch "testingFile_$i.txt";
     echo $content >> "testingFile_$i.txt";

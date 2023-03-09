@@ -24,9 +24,7 @@ impl PathWithStatus {
 
                 // Check to see if enough to do multi-threaded
                 if child_paths.len() > 4 {
-                  // Add parent path to list of paths to remove
-                    child_paths.push(self.path.clone());
-
+                
                     // Create Channel for communicating that the thread has completed the path removal
                     let (thread_complete_tx_1, thread_complete_rx): (
                         Sender<String>,
@@ -58,30 +56,27 @@ impl PathWithStatus {
                     let thread_handle_1 = thread::Builder::new()
                         .name("thread1".to_string())
                         .spawn(move || {
-                            let thread_name = match thread::current().name() {
-                                Some(name) => String::from(name),
-                                None => String::from(""),
-                            };
-                            let path_to_remove = path_channel_rx_1.recv().unwrap();
+                            for path_to_remove in path_channel_rx_1 {
+                                let thread_name = match thread::current().name() {
+                                    Some(name) => String::from(name),
+                                    None => String::from(""),
+                                };
 
-                            if path_to_remove.is_dir() {
-                                match fs::remove_dir_all(path_to_remove) {
-                                    Ok(_) => {}
-                                    Err(e) => print!("{}", e),
+                                if path_to_remove.is_dir() {
+                                    match fs::remove_dir_all(path_to_remove) {
+                                        Ok(_) => {}
+                                        Err(e) => print!("{}", e),
+                                    }
+                                } else if path_to_remove.is_file() {
+                                    match fs::remove_file(path_to_remove) {
+                                        Ok(_) => {}
+                                        Err(e) => println!("{}", e),
+                                    }
                                 }
-                            } else if path_to_remove.is_file() {
-                                match fs::remove_file(path_to_remove) {
+
+                                match thread_complete_tx_1.send(thread_name) {
                                     Ok(_) => {}
                                     Err(e) => println!("{}", e),
-                                }
-                            }
-
-                            match thread_complete_tx_1.send(thread_name) {
-                                Ok(_) => {
-                                    println!("removed from thread successfully and sent");
-                                }
-                                Err(e) => {
-                                    println!("{}", e);
                                 }
                             }
                         })?;
@@ -89,30 +84,27 @@ impl PathWithStatus {
                     let thread_handle_2 = thread::Builder::new()
                         .name("thread2".to_string())
                         .spawn(move || {
-                            let thread_name = match thread::current().name() {
-                                Some(name) => String::from(name),
-                                None => String::from(""),
-                            };
-                            let path_to_remove = path_channel_rx_2.recv().unwrap();
+                            for path_to_remove in path_channel_rx_2 {
+                                let thread_name = match thread::current().name() {
+                                    Some(name) => String::from(name),
+                                    None => String::from(""),
+                                };
 
-                            if path_to_remove.is_dir() {
-                                match fs::remove_dir_all(path_to_remove) {
-                                    Ok(_) => {}
-                                    Err(e) => print!("{}", e),
+                                if path_to_remove.is_dir() {
+                                    match fs::remove_dir_all(path_to_remove) {
+                                        Ok(_) => {}
+                                        Err(e) => print!("{}", e),
+                                    }
+                                } else if path_to_remove.is_file() {
+                                    match fs::remove_file(path_to_remove) {
+                                        Ok(_) => {}
+                                        Err(e) => println!("{}", e),
+                                    }
                                 }
-                            } else if path_to_remove.is_file() {
-                                match fs::remove_file(path_to_remove) {
+
+                                match thread_complete_tx_2.send(thread_name) {
                                     Ok(_) => {}
                                     Err(e) => println!("{}", e),
-                                }
-                            }
-
-                            match thread_complete_tx_2.send(thread_name) {
-                                Ok(_) => {
-                                    println!("removed from thread successfully and sent");
-                                }
-                                Err(e) => {
-                                    println!("{}", e);
                                 }
                             }
                         })?;
@@ -120,30 +112,27 @@ impl PathWithStatus {
                     let thread_handle_3 = thread::Builder::new()
                         .name("thread3".to_string())
                         .spawn(move || {
-                            let thread_name = match thread::current().name() {
-                                Some(name) => String::from(name),
-                                None => String::from(""),
-                            };
-                            let path_to_remove = path_channel_rx_3.recv().unwrap();
+                            for path_to_remove in path_channel_rx_3 {
+                                let thread_name = match thread::current().name() {
+                                    Some(name) => String::from(name),
+                                    None => String::from(""),
+                                };
 
-                            if path_to_remove.is_dir() {
-                                match fs::remove_dir_all(path_to_remove) {
-                                    Ok(_) => {}
-                                    Err(e) => print!("{}", e),
+                                if path_to_remove.is_dir() {
+                                    match fs::remove_dir_all(path_to_remove) {
+                                        Ok(_) => {}
+                                        Err(e) => print!("{}", e),
+                                    }
+                                } else if path_to_remove.is_file() {
+                                    match fs::remove_file(path_to_remove) {
+                                        Ok(_) => {}
+                                        Err(e) => println!("{}", e),
+                                    }
                                 }
-                            } else if path_to_remove.is_file() {
-                                match fs::remove_file(path_to_remove) {
-                                    Ok(_) => {}
-                                    Err(e) => println!("{}", e),
-                                }
-                            }
 
-                            match thread_complete_tx_3.send(thread_name) {
-                                Ok(_) => {
-                                    println!("removed from thread successfully and sent");
-                                }
-                                Err(e) => {
-                                    println!("{}", e);
+                                match thread_complete_tx_3.send(thread_name) {
+                                    Ok(_) => {},
+                                    Err(e) => println!("{}", e)
                                 }
                             }
                         })?;
@@ -151,30 +140,27 @@ impl PathWithStatus {
                     let thread_handle_4 = thread::Builder::new()
                         .name("thread4".to_string())
                         .spawn(move || {
-                            let thread_name = match thread::current().name() {
-                                Some(name) => String::from(name),
-                                None => String::from(""),
-                            };
-                            let path_to_remove = path_channel_rx_4.recv().unwrap();
+                            for path_to_remove in path_channel_rx_4 {
+                                let thread_name = match thread::current().name() {
+                                    Some(name) => String::from(name),
+                                    None => String::from(""),
+                                };
 
-                            if path_to_remove.is_dir() {
-                                match fs::remove_dir_all(path_to_remove) {
-                                    Ok(_) => {}
-                                    Err(e) => print!("{}", e),
+                                if path_to_remove.is_dir() {
+                                    match fs::remove_dir_all(path_to_remove) {
+                                        Ok(_) => {}
+                                        Err(e) => print!("{}", e),
+                                    }
+                                } else if path_to_remove.is_file() {
+                                    match fs::remove_file(path_to_remove) {
+                                        Ok(_) => {}
+                                        Err(e) => println!("{}", e),
+                                    }
                                 }
-                            } else if path_to_remove.is_file() {
-                                match fs::remove_file(path_to_remove) {
-                                    Ok(_) => {}
-                                    Err(e) => println!("{}", e),
-                                }
-                            }
 
-                            match thread_complete_tx_4.send(thread_name) {
-                                Ok(_) => {
-                                    println!("removed from thread successfully and sent");
-                                }
-                                Err(e) => {
-                                    println!("{}", e);
+                                match thread_complete_tx_4.send(thread_name) {
+                                    Ok(_) => {},
+                                    Err(e) => println!("{}", e)
                                 }
                             }
                         })?;
@@ -202,36 +188,36 @@ impl PathWithStatus {
                     }
 
                     let controller_handle = thread::spawn(move || {
-                        let path_completed = thread_complete_rx.recv().unwrap();
-
-                        if let Some(child_path) = child_paths.pop() {
-                            match path_completed.as_ref() {
-                                "thread1" => {
-                                    path_channel_tx_1.send(child_path).ok();
+                        for path_completed in thread_complete_rx {
+                            if let Some(child_path) = child_paths.pop() {
+                                match path_completed.as_ref() {
+                                    "thread1" => {
+                                        path_channel_tx_1.send(child_path).ok();
+                                    }
+                                    "thread2" => {
+                                        path_channel_tx_2.send(child_path).ok();
+                                    }
+                                    "thread3" => {
+                                        path_channel_tx_3.send(child_path).ok();
+                                    }
+                                    "thread4" => {
+                                        path_channel_tx_4.send(child_path).ok();
+                                    }
+                                    _ => {}
                                 }
-                                "thread2" => {
-                                    path_channel_tx_2.send(child_path).ok();
-                                }
-                                "thread3" => {
-                                    path_channel_tx_3.send(child_path).ok();
-                                }
-                                "thread4" => {
-                                    path_channel_tx_4.send(child_path).ok();
-                                }
-                                _ => {}
-                            }
-                        } else {
-                            match path_completed.as_ref() {
-                                "thread1" => thread_handle_1.join().unwrap(),
-                                "thread2" => thread_handle_2.join().unwrap(),
-                                "thread3" => thread_handle_3.join().unwrap(),
-                                "thread4" => thread_handle_4.join().unwrap(),
-                                _ => {}
+                            } else {
+                                // No more paths to give, break
+                                break;
                             }
                         }
                     });
-
                     controller_handle.join().unwrap();
+                    thread_handle_1.join().unwrap();
+                    thread_handle_2.join().unwrap();
+                    thread_handle_3.join().unwrap();
+                    thread_handle_4.join().unwrap();
+
+                    fs::remove_dir_all(&self.path).unwrap();
                 } else {
                     match fs::remove_dir_all(&self.path) {
                         Ok(_) => {
