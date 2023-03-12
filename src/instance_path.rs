@@ -5,7 +5,7 @@ use std::{
     path::PathBuf,
 };
 
-use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
+use rayon::prelude::{ParallelIterator, IntoParallelIterator};
 
 pub struct PathWithStatus {
     pub path: PathBuf,
@@ -24,7 +24,7 @@ impl PathWithStatus {
 
                 // Check to see if enough to do multi-threaded
                 if child_paths.len() > 4 {
-                    child_paths.par_iter().for_each(|path| {
+                    child_paths.into_par_iter().for_each(|path| {
                         if path.is_dir() {
                             fs::remove_dir_all(path).unwrap();
                         } else {
